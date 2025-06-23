@@ -51,19 +51,19 @@ jobs:
           weasyprint site/index.html open-knowledge-systems.pdf
 
       - name: 📦 Upload site output
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: html-site
           path: site/
 
       - name: 📦 Upload PDF
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: open-knowledge-systems.pdf
           path: open-knowledge-systems.pdf
 
       - name: 📦 Upload EPUB
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: open-knowledge-systems.epub
           path: open-knowledge-systems.epub
