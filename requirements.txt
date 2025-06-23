@@ -23,7 +23,7 @@ beautifulsoup4==4.12.3
 
 # --- Graph Modeling ---
 neo4j==5.18.0
-py2neo==2021.2.3
+py2neo==2021.2.4
 
 # --- Testing & Linting ---
 pytest==8.2.1
