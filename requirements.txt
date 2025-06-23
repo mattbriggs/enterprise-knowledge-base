@@ -32,9 +32,8 @@ black==24.4.2
 flake8==7.0.0
 
 # --- PDF/EPUB Generation (optional) ---
-# Uncomment if you want PDF export support
-# weasyprint==61.2
-# mkdocs-pdf-export-plugin==0.5.10
+weasyprint==61.2
+mkdocs-pdf-export-plugin==0.5.10
 
 # --- Miscellaneous ---
 requests==2.32.2
