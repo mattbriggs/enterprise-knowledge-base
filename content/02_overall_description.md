@@ -5,7 +5,7 @@ slug: 02_overall_description
 
 # Overall Description  
 
-### 2.1 Product Perspective  
+## Product Perspective  
 The OKS is a **new, standalone platform** that combines features of a traditional Content Management System (CMS) with a Knowledge Graph system. It can be seen as a central hub in which content is authored or ingested, enriched with semantic metadata, and then delivered to end users or applications. The system interacts with several external entities: human users (content authors, administrators, and consumers), external data sources (for content ingestion), AI agents or external applications (via API), and external infrastructure services (for authentication and monitoring). The figure in Section 2.7.1 shows the context of OKS relative to these external actors and systems.
 
 Internally, OKS is modular, comprising multiple subsystems (modules) and associated data stores, labeled for reference as follows:  
@@ -42,7 +42,7 @@ The data stores (A through K) mentioned above are logical components where diffe
 
 Below is the system context diagram illustrating OKS and its interactions with users and external systems:
 
-#### 2.7.1 System Context Diagram  
+### System Context Diagram  
 ```mermaid
 flowchart LR;
     %% External Actors/Systems
@@ -73,7 +73,7 @@ flowchart LR;
 
 *Figure: System Context Diagram.* The OKS platform interacts with multiple actors: **Content Authors** create content through OKS's interface; **Administrators** configure schemas, rules, and other settings; **External Sources** supply content via ingestion pipelines; **AI Agents or client applications** consume content through the REST API (secured via an OAuth2 **AuthProvider** in production); **End Users** access published content via the generated **Static Website**; and a monitoring system collects **telemetry** from OKS.  
 
-### 2.2 Product Functions  
+## Product Functions  
 At a high level, OKS provides the following key functions to fulfill the needs of its users and stakeholders:
 
 - **Content Authoring and Editing:** Authors can create new content items or edit existing ones using a user-friendly interface. The interface enforces structure by letting the author select a content type (schema) and then providing a form or editor corresponding to that schema. The system validates the content in real-time or on submission against the schema and any defined rules, ensuring that the content is structurally sound before it's saved (REQ-002, REQ-003). The authoring interface may support writing content in **YAML** front-matter plus **Markdown** body (a common pattern), or directly in a structured editor. Given that *content is stored in two formats: YAML for data, and Markdown for narrative text* [oai_citation:7‡quire.getty.edu](https://quire.getty.edu/docs-v1/fundamentals/#:~:text=Content%20is%20stored%20in%20two,top%20of%20every%20Markdown%20file), the system will likely separate fields (YAML) from rich text (Markdown) content internally. A critical function here is **schema-validated authoring** - preventing authors from deviating from the defined content model.  
@@ -98,7 +98,7 @@ Security features (though largely non-functional) also manifest as product funct
 
 To summarize, OKS functions as an integrated **knowledge-centric content hub**: it not only manages content like a CMS but also enriches it into a knowledge graph. It ensures content quality through schema and rules, enhances findability via semantic enrichment, and delivers content in multiple ways (static site for humans, API for machines). The next sections will detail the requirements that realize these functions.  
 
-### 2.3 User Classes and Characteristics  
+## User Classes and Characteristics  
 Different categories of users (or system actors) will interact with OKS, each with specific needs and technical backgrounds:
 
 - **Content Authors (Users):** These are subject-matter experts or content writers who use the platform to create and update content. They are usually non-technical or semi-technical users. They need a **user-friendly authoring interface** that might resemble a rich text editor or form. They are concerned with easily inputting content, adding media if needed, tagging content with the right terms, and seeing previews of how the content will look on the site. They rely on the system to validate their input (so they don't have to worry about YAML syntax intricacies or schema details). Authors might be aware of basic Markdown for formatting text but should not be required to troubleshoot structural errors - the system should guide them. They do not directly interact with YAML files or the database; everything is through the UI or maybe a desktop editor if the system supports content import. Their technical skill: moderate; main goal: produce high-quality content efficiently.  
@@ -115,7 +115,7 @@ Each user class has distinct usage scenarios, which the requirements must accomm
 
 The user classes and their characteristics guide many of the usability and accessibility requirements (e.g., UI must be intuitive for authors, API must be well-documented for developers, etc.) which will be detailed in the requirements section. 
 
-### 2.4 Operating Environment  
+## Operating Environment  
 The OKS is envisioned as an application that can run on modern servers or cloud environments, containerized for ease of deployment. The primary technologies and environment considerations are:  
 
 - **Open-Source Stack:** The application will be built with open-source technologies, primarily using **Python** for the backend logic (FastAPI framework for the web API and possibly web UI). This choice ensures extensibility and a broad community support. The knowledge graph database will likely be **Neo4j** (a popular graph DB suitable for ontology and content networks), and the vector search capability will be provided by a vector database like **Weaviate**. Weaviate is an open-source vector search engine that also has knowledge graph features [oai_citation:11‡azumo.com](https://azumo.com/software-developer/weaviate#:~:text=Hire%20Nearshore%20Weaviate%20Developers%20,search%20and%20knowledge%20graph%20exploration), making it well-suited to integrate semantic search with structured data. In our architecture, Neo4j will handle the rich graph queries and relationships, while Weaviate (or an equivalent) will handle high-performance vector similarity queries. The Document store could be something like a lightweight NoSQL database (e.g. MongoDB or even just Git-managed YAML files for PoC). All these components are open-source, aligning with an extensibility ethos.  
@@ -136,7 +136,7 @@ The OKS is envisioned as an application that can run on modern servers or cloud 
 
 In summary, the operating environment is a **containerized microservice environment** comprising the OKS app and supporting databases, capable of running on local or cloud infrastructure. It will be configured and scaled according to the specified performance needs (see Non-Functional Requirements for specifics like "≥10k writes/min').  
 
-### 2.5 Design and Implementation Constraints  
+## Design and Implementation Constraints  
 The design of OKS is influenced by several constraints and choices:
 
 - **Standards and Protocols:** The system will adhere to **RESTful API standards** for its external API, using JSON payloads. It will also adhere to **OAuth 2.0** standards for auth (likely the "Bearer token' scheme for API requests). For content metadata, using **JSON-LD** means following W3C's JSON-LD 1.1 spec, and likely schema.org vocabulary for content where appropriate (to maximize SEO and AI understanding).  
@@ -158,7 +158,7 @@ The design of OKS is influenced by several constraints and choices:
 
 In summary, constraints arise from performance targets (which push a scalable, distributed design), technology choices (which push certain data modeling and interfacing patterns), and content format (necessitating robust YAML/Markdown handling). The design documented in architecture diagrams (Section 2.7) reflects these constraints by showing multiple integrated components and the flow of data among them. 
 
-### 2.6 Assumptions and Dependencies  
+## Assumptions and Dependencies  
 Throughout this SRS, we make a few assumptions and note external dependencies:
 
 - **Open-Source Components Availability:** We assume that Neo4j, Weaviate, FastAPI, etc., are available and appropriate for use. The project depends on these communities for updates (e.g., bug fixes in those platforms). If any of these were to become untenable (license change, performance issue), we assume we can find alternatives (e.g. use a different vector DB, or use an alternative graph store like JanusGraph, etc.). For now, the design leans on these specific tools due to their strengths (Neo4j for rich graph queries, Weaviate for combined vector+filter search [oai_citation:17‡azumo.com](https://azumo.com/software-developer/weaviate#:~:text=Hire%20Nearshore%20Weaviate%20Developers%20,search%20and%20knowledge%20graph%20exploration)).  
@@ -185,10 +185,10 @@ Finally, we assume stakeholder support for the open-source approach - i.e., that
 
 With these assumptions clarified, we proceed to illustrate the system architecture and then the detailed requirements. Any changes in assumptions (like a need to support multiple simultaneous ingestion jobs, or much higher concurrency) would necessitate revisiting some requirements and design decisions.  
 
-### 2.7 System Architecture and Workflow  
+## System Architecture and Workflow  
 This section provides an overview of how the OKS components work together, via a series of diagrams.
 
-#### 2.7.2 Data Flow Diagram - Level 1  
+### Data Flow Diagram - Level 1  
 The following data flow diagram (DFD) shows the major processes (modules 1.0-13.0) of OKS and how data flows between processes and data stores (A-K). It represents a high-level (Level 1) view of the system's internal operations:
 
 ```mermaid
@@ -286,7 +286,7 @@ flowchart LR;
 
 This high-level flow ensures all modules interact in a controlled manner: for example, authors indirectly cause updates to G and H via the pipeline 1.0→3.0→4.0, and any schema changes in A would influence how P1/P2 validate content, etc.  
 
-#### 2.7.3 Data Flow Diagram - Level 2 (Content Pipeline)  
+### Data Flow Diagram - Level 2 (Content Pipeline)  
 The next diagram zooms into the content processing pipeline, detailing sub-processes within Ingestion, Enrichment, and Load (processes 2.0, 3.0, 4.0 from above). This is a DFD Level 2 focusing on how a single content item goes from raw input to fully stored and indexed:
 
 ```mermaid
@@ -345,7 +345,7 @@ flowchart TD;
 
 This pipeline ensures that by the time content is saved: it is valid, unique, enriched with knowledge, and efficiently searchable (via text or semantic similarity). We also highlight that any point can log telemetry (not drawn to avoid clutter, but each step could log success/failure to I). The decision diamond for duplicates shows a possible branch where duplicate content is handled gracefully (the requirement might be to not allow exact duplicates, or to merge them).  
 
-#### 2.7.4 Deployment Diagram  
+### Deployment Diagram  
 The deployment diagram below outlines a possible production deployment of OKS components on a Kubernetes cluster. It shows how the software pieces map to deployment units (containers, pods, etc.) and their communication.  
 
 ```mermaid
@@ -406,7 +406,7 @@ flowchart LR;
 
 For the PoC deployment (not explicitly shown), all these might run on one VM or docker-compose, possibly without the AuthSystem and with minimal monitoring. But this deployment diagram represents the target production setup aligning to requirements: it shows separation of concerns (API vs DB vs static serving), use of Docker/K8s (for portability), and integration with auth and monitoring (for security and observability).  
 
-#### 2.7.5 Core Data Model (Entity/KG) Diagram  
+### Core Data Model (Entity/KG) Diagram  
 Lastly, we present an entity relationship model for the core concepts stored in the knowledge graph and content store. This combines the content model and ontology model. 
 
 ```mermaid

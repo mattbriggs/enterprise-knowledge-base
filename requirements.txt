@@ -32,6 +32,7 @@ black==24.4.2
 flake8==7.0.0
 
 # --- PDF/EPUB Generation (optional) ---
+pydyf==0.8.0
 weasyprint==61.2
 mkdocs-pdf-export-plugin==0.5.10
 

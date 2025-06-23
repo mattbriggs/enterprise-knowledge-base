@@ -7,7 +7,7 @@ slug: 03_requirements
 
 This section lists all verifiable requirements of the OKS platform, divided into functional and non-functional categories. Each requirement is identified by a unique code for traceability. Supporting rationale or references are provided where relevant.  
 
-### 3.1 Functional Requirements  
+## Functional Requirements  
 
 **REQ-001 - Schema Management Interface:** The system **shall provide** a user interface (UI) and/or API endpoints for administrators to perform full CRUD (Create, Read, Update, Delete) operations on content type schemas. This includes defining new schema entities with a name and a set of fields (with types and constraints), modifying existing schemas (e.g. adding or removing fields), and deleting schemas that are no longer needed (provided no active content depends on them). Schemas are versioned or tracked such that changes can be auditable. Schema definitions are persisted in the Schema Store (A).  
 
@@ -115,7 +115,7 @@ These performance targets will be verified with test scenarios. If any target is
 
 While not a feature directly visible to end-users, this requirement ensures that the service quality can be managed proactively. Real-world usage data will refine KPIs; the initial SLA targets are derived from requirements (10k/min, 150ms, etc.) which themselves will be validated and possibly tuned when in production using performance testing [oai_citation:29‡radview.com](https://www.radview.com/blog/in-the-spotlight-the-sla-for-performance-and-load-testing/#:~:text=application%20will%20perform%20under%20excessive,foundation%20data%20for%20performance%20SLAs).  
 
-### 3.2 Non-Functional Requirements  
+## Non-Functional Requirements  
 
 *(Note: Some NFRs like performance and security have been interwoven above. This section reiterates or adds any NFRs not covered as discrete functional requirements.)*  
 

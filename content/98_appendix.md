@@ -3,9 +3,9 @@ title: "Appendices"
 slug: 98_appendix
 ---
 
-# 4. Appendices  
+# Appendices  
 
-### 4.1 Glossary of Terms  
+## Glossary of Terms  
 *(This glossary defines terms and domain-specific language used in the SRS to ensure clarity.)*
 
 - **Atomic Container / Content Item:** A discrete unit of content managed by GKCMS, which includes both the content data (text, etc.) and associated metadata. Called "atomic' to imply it's a smallest standalone piece (like an article, a FAQ entry, etc.).  
@@ -29,7 +29,7 @@ slug: 98_appendix
 - **Prometheus:** A monitoring system and time-series database. GKCMS exposes metrics in a format Prometheus can scrape to collect performance data.  
 - **Mermaid Diagrams:** Not part of the system per se, but a tool we used in documentation (like this SRS) to describe graphs and diagrams in text form.  
 
-### 4.2 Acronyms and Abbreviations  
+## Acronyms and Abbreviations  
 
 - **GKCMS:** Generic Knowledge & Content Management Platform (the system being specified).  
 - **CMS:** Content Management System. Software for creating, managing, and delivering digital content.  
@@ -59,7 +59,5 @@ slug: 98_appendix
 - **URL:** Uniform Resource Locator - addresses for API endpoints, etc.  
 - **SPA:** Single Page Application - not necessarily what static site is (likely static site is multi-page static), but admin UI might be an SPA if implemented.  
 - **GIL:** Global Interpreter Lock (Python-specific, a constraint for concurrency).  
-
-*End of System Requirements Specification.* 
 
 **References:** (Citations as listed inline, e.g., [oai_citation:43‡chrisdaaz.github.io](https://chrisdaaz.github.io/static-web-scholcomm/tutorials/static-site-generators/#:~:text=YAML%20syntax%20is%20strict%3B%20invalid,an%20error%20you%20don%E2%80%99t%20understand) correspond to the sources in section 1.4)
