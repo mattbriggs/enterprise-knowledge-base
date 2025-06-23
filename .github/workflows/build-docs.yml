@@ -10,6 +10,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      JUPYTER_PLATFORM_DIRS: 1
 
     steps:
       - name: ⬇️ Checkout repo
@@ -24,6 +26,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install mkdocs-git-revision-date-localized-plugin
 
       - name: 📘 Install Pandoc
         run: |

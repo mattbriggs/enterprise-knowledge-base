@@ -7,7 +7,8 @@ slug: 01_introduction
 
 ## 1. Introduction  
 
-### 1.1 Purpose  
+### 1.1 Purpose
+
 The purpose of this document is to define a complete Software/System Requirements Specification (SRS) for the **Generic Knowledge & Content Management Platform (GKCMS)**. This platform is intended to manage structured content (in the form of "atomic containers') for use by both human users and AI agents. The SRS outlines the system's functionality, constraints, and quality requirements in compliance with IEEE 830 standards. It will serve as a reference for stakeholders (developers, testers, users, etc.) to understand what the system will do and the conditions under which it will operate.  
 
 ### 1.2 Scope  
