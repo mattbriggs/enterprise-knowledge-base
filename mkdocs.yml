@@ -1,0 +1,73 @@
+site_name: Open Knowledge Systems
+site_description: A book and toolkit for building structured enterprise knowledge systems
+site_author: Final State Press
+site_url: https://finalstatepress.com/open-knowledge-systems
+
+repo_name: finalstatepress/open-knowledge-systems
+repo_url: https://github.com/finalstatepress/open-knowledge-systems
+edit_uri: edit/main/content/
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.top
+    - toc.integrate
+    - content.code.annotate
+    - content.tabs.link
+    - search.suggest
+    - search.highlight
+    - content.action.edit
+  palette:
+    - scheme: default
+      primary: blue
+      accent: indigo
+    - scheme: slate
+      primary: blue
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to dark mode
+
+nav:
+  - Home: index.md
+  - 1. Introduction: content/01_introduction.md
+  - 2. Authoring & ETL: content/02_authoring_etl.md
+  - 3. Storage & Retrieval: content/03_storage_retrieval.md
+  - 4. Graph Modeling (Neo4j): content/04_graph_modeling_neo4j.md
+  - 5. Validation: content/05_validation.md
+  - 6. Publishing & Output: content/06_publication.md
+  - 7. Future Directions: content/99_future_work.md
+  - Notebooks:
+      - ETL Demo (Jupyter): notebooks/demo_author_etl.ipynb
+
+markdown_extensions:
+  - toc:
+      permalink: true
+  - admonition
+  - codehilite
+  - footnotes
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - pymdownx.details
+  - pymdownx.tabbed
+  - pymdownx.emoji
+
+plugins:
+  - search
+  - mkdocs-jupyter:
+      include_source: True
+  - mkdocs-git-revision-date-localized
+  - autorefs
+  - mkdocstrings:
+      handlers:
+        python:
+          setup_commands:
+            - import sys; sys.path.insert(0, "src")
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/finalstatepress/open-knowledge-systems
