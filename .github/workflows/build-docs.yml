@@ -66,6 +66,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: open-knowledge-systems.epub
-          path: open-knowledge-systems.epubpush git add 
-
-          it push 
+          path: open-knowledge-systems.epubpush git add
