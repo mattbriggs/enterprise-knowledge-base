@@ -60,13 +60,15 @@ jobs:
           path: site/
 
       - name: 📦 Upload PDF
+        if: success() && hashFiles('open-knowledge-systems.pdf') != ''
         uses: actions/upload-artifact@v4
         with:
           name: open-knowledge-systems.pdf
           path: open-knowledge-systems.pdf
 
       - name: 📦 Upload EPUB
+        if: success() && hashFiles('open-knowledge-systems.epub') != ''
         uses: actions/upload-artifact@v4
         with:
           name: open-knowledge-systems.epub
-          path: open-knowledge-systems.epubpush git add
+          path: open-knowledge-systems.epub
