@@ -49,9 +49,17 @@ jobs:
             --metadata author="Final State Press" \
             --toc --epub-chapter-level=2
 
-      - name: 🖨 Build PDF with WeasyPrint
+      - name: Install LaTeX for Pandoc PDF
         run: |
-          weasyprint site/index.html open-knowledge-systems.pdf
+          sudo apt-get update
+          sudo apt-get install -y texlive-xetex texlive-fonts-recommended
+
+      - name: 🖨 Build PDF with Pandoc
+        run: |
+          pandoc content/*.md -o open-knowledge-systems.pdf \
+            --metadata title="Open Knowledge Systems" \
+            --metadata author="Final State Press" \
+            --toc --pdf-engine=xelatex
 
       - name: 📦 Upload site output
         uses: actions/upload-artifact@v4
