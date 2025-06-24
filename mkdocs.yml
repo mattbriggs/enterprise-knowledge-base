@@ -14,7 +14,6 @@ theme:
   language: en
   features:
     - navigation.instant
-    - navigation.tabs
     - navigation.top
     - toc.integrate
     - content.code.annotate
