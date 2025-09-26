@@ -89,7 +89,7 @@ Output is saved in the `/site/` folder.
 
 ---
 
-## 📚 Create an EPUB
+## Create an EPUB
 
 Use `pandoc` to convert the Markdown source into `.epub`.
 
@@ -121,7 +121,7 @@ pandoc content/*.md -o open-knowledge-systems.epub \
 
 ---
 
-## 🖨 Create a PDF
+## Create a PDF
 
 PDF output depends on your system's LaTeX or HTML rendering setup. Two options:
 
