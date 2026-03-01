@@ -5,57 +5,63 @@ slug: 04_authoring_etl
 
 # 4. Authoring & ETL
 
-Chapter 4 anchors the manuscript in the first implemented boundary that is both real and central to the larger design. It explains how author-facing Markdown becomes machine-friendly records, which rules govern that transformation, and where the implementation draws hard boundaries.
+Chapter 4 anchors the manuscript in the first implemented boundary that is both real and central to the larger system design. It explains how author-facing Markdown becomes machine-friendly records, which rules govern that transformation, and where the implementation draws hard boundaries.
 
-The ETL layer in `src/oks/etl.py` is intentionally narrow. It does not implement schema CRUD, semantic enrichment, or database persistence. It does implement the boundary those later capabilities depend on: parse, normalize, identify, and emit deterministic records.
+The technical point is straightforward. Markdown is a usable authoring surface, but it is not by itself a stable machine contract. The ETL layer in `src/oks/etl.py` exists to turn authored documents into deterministic records that later systems can trust.
 
-## 4.1 The Authoring Contract
+## 4.1 The Authoring Boundary
 
-The current authoring contract is small enough to reason about precisely:
+The current authoring contract is intentionally small:[^c4-commonmark][^c4-yaml]
 
-- Each source document is a Markdown file.
-- Optional YAML front matter stores document metadata such as `title` and `slug`.
-- The Markdown body is chunked at level-two headings, meaning headings that begin with `## ` at the start of a line.
-- Each emitted chunk inherits the document metadata and the source file identity.
+- each source document is a Markdown file
+- an optional YAML front matter block may appear at the top of the file
+- level-two headings define chunk boundaries
+- each chunk inherits document-level metadata and provenance
 
-This contract is intentionally conservative. It does not pretend that arbitrary Markdown is already a robust data model. Instead, it uses a constrained document shape that can be validated and transformed predictably.
+This contract is narrower than the full CommonMark syntax and narrower than a production content model. That is deliberate. A first implementation benefits more from explicit, stable behavior than from flexibility.
 
-## 4.2 What The Pipeline Does
+Two distinctions matter.
+
+First, Markdown is the author-facing syntax, not the machine-facing storage contract. Second, front matter is a local repository convention layered on top of Markdown rather than a feature of CommonMark itself.
+
+## 4.2 What The ETL Slice Does
 
 The ETL slice implements five practical operations:
 
 1. detect and parse YAML front matter
-2. split the document body into chunkable sections
-3. assign a deterministic identifier to each section
-4. emit normalized chunk records
-5. optionally emit a graph-oriented projection derived from those records
+2. separate metadata from the Markdown body
+3. split the body into chunks at level-two headings
+4. assign deterministic identifiers to those chunks
+5. emit normalized JSON records and, optionally, a graph-oriented projection
 
-The first four operations are the core ETL path. The graph projection is a downstream convenience layer.
+The first four steps define the core machine boundary. The graph projection is a consumer of that boundary.
 
-## 4.3 Parsing Rules
+## 4.3 Parsing Model
 
-The parsing behavior is defined by the implementation rather than by editorial convention, so it is worth stating it exactly.
+The parsing behavior is defined by code rather than by editorial intention, so the rules should be stated exactly.
 
 ### 4.3.1 Front Matter Detection
 
-The function `split_front_matter()` treats a document as having front matter only if the file begins with a leading `---` block. In implementation terms, the parser matches the document against a regular expression anchored to the start of the file:
+`split_front_matter()` treats a document as having front matter only if the file begins with a `---` block at byte zero. The implementation uses a regular expression anchored to the start of the document:
 
 ```python
 ^---\n(.*?)\n---\n?(.*)$
 ```
 
-That detail matters because it creates several current rules:
+That produces several concrete rules:
 
-- front matter must begin on the first line of the file
+- front matter must start on the first line
 - the closing delimiter must also be `---`
-- any blank lines or content before the opening delimiter prevent front matter detection
-- content without matching front matter is still valid and is treated as body-only Markdown
+- blank lines before the opening delimiter suppress front matter detection
+- documents without front matter remain valid and are treated as body-only Markdown
+
+This is not a universal front matter standard. It is the repository's current parsing contract.
 
 ### 4.3.2 Front Matter Shape
 
-Once detected, front matter is parsed with `yaml.safe_load()`. The parsed result must be a mapping. Scalar values or top-level lists are rejected.
+Once front matter is detected, `parse_front_matter()` calls `yaml.safe_load()` and requires the parsed value to be a mapping.
 
-That means the following is valid:
+That means this shape is valid:
 
 ```yaml
 ---
@@ -68,30 +74,71 @@ tags:
 ---
 ```
 
-And the following is invalid because the top-level YAML value is not a mapping:
+This shape is invalid because the top-level value is a list:
 
 ```yaml
 ---
-- bad
-- front
-- matter
+- invalid
+- metadata
 ---
 ```
 
+The choice to require a mapping is a small but important contract. Metadata must behave like keyed fields, not like an arbitrary YAML document.
+
 ### 4.3.3 Body Chunking
 
-The body is chunked by the regular expression `(?=^##\s)` in multiline mode. This creates a strict rule: only level-two headings begin a new chunk. Lower or higher heading levels remain inside the current chunk unless they themselves match `## `.
+`chunk_markdown_by_heading()` splits the body with the expression `(?=^##\s)` in multiline mode. In practical terms, only level-two ATX headings start a new chunk.
 
-The current consequences are:
+That produces the following behavior:
 
 - `## Section` starts a new chunk
-- `### Subsection` does not start a new chunk
+- `### Subsection` stays inside the current chunk
 - prose before the first `##` becomes an `Intro` chunk
-- an empty body yields no chunk records
+- an empty body yields no chunks
 
-These are not generic Markdown semantics. They are the repository's current normalization rules.
+Again, these are repository-local normalization rules. They are not a claim about how all Markdown should be processed.
 
-## 4.4 Worked Example
+## 4.4 Deterministic Identity
+
+The repository's first durable guarantee is not schema richness. It is deterministic identity.
+
+`build_chunk_id()` constructs identifiers in this format:
+
+```text
+{slugified source stem}-{three-digit order}-{slugified heading}
+```
+
+The `slugify()` helper lowercases the text, replaces non-alphanumeric runs with `-`, trims leading and trailing separators, and falls back to `item` if nothing remains. That yields predictable identifiers such as:
+
+- `01-introduction-001-intro`
+- `knowledge-handbook-002-normalization-boundary`
+
+This matters for four reasons:
+
+- graph loading depends on stable keys
+- future retrieval layers need durable joins
+- corpus-level duplicate detection becomes possible
+- rebuilds remain explainable
+
+## 4.5 Record Contract
+
+Each emitted chunk record has the same shape.
+
+| Field | Purpose |
+| --- | --- |
+| `id` | deterministic chunk identifier |
+| `heading` | local section heading, or `Intro` for pre-heading content |
+| `content` | raw Markdown for the chunk |
+| `order` | one-based order within the source document |
+| `source_file` | original filename |
+| `source_path` | extraction-time path |
+| `document_title` | title from metadata or fallback from filename |
+| `document_slug` | slug from metadata or filename-derived fallback |
+| `metadata` | parsed front matter mapping |
+
+This structure is intentionally flat except for `metadata`. The flat fields support direct downstream use. The nested metadata preserves source detail without pretending that every front matter key has already been normalized into a schema.
+
+## 4.6 Worked Example
 
 Consider the following source document:
 
@@ -126,122 +173,78 @@ The current implementation emits three chunks:
 2. a `Normalization Boundary` chunk
 3. a `Failure Modes` chunk
 
-The first two chunk identifiers are:
+The first two identifiers are:
 
 - `knowledge-handbook-001-intro`
 - `knowledge-handbook-002-normalization-boundary`
 
-The identifier format is deterministic:
+Those identifiers come directly from the source stem, chunk order, and heading text. No external state is required to reproduce them.
 
-```text
-{slugified source stem}-{three-digit order}-{slugified heading}
-```
+## 4.7 Corpus Traversal
 
-That behavior comes directly from `build_chunk_id()` and the `slugify()` helper in `src/oks/etl.py`.
-
-## 4.5 Normalized Record Shape
-
-Each emitted chunk has the same record contract.
-
-| Field | Meaning |
-| --- | --- |
-| `id` | Deterministic chunk identifier |
-| `heading` | Chunk heading, or `Intro` for pre-heading content |
-| `content` | The raw Markdown content for the chunk |
-| `order` | One-based chunk order within the source document |
-| `source_file` | File name of the originating document |
-| `source_path` | Relative path used at extraction time |
-| `document_title` | Title from front matter, or a filename-derived fallback |
-| `document_slug` | Slug from front matter, or a slugified filename fallback |
-| `metadata` | The parsed front matter mapping |
-
-A real record from the repository currently looks like this:
-
-```json
-{
-  "id": "01-introduction-001-intro",
-  "heading": "Intro",
-  "content": "# 1. Introduction",
-  "order": 1,
-  "source_file": "01_introduction.md",
-  "source_path": "content/01_introduction.md",
-  "document_title": "Introduction",
-  "document_slug": "01_introduction",
-  "metadata": {
-    "title": "Introduction",
-    "slug": "01_introduction"
-  }
-}
-```
-
-Two details are easy to miss:
-
-- the first chunk in many files is `Intro` because the chapter title line appears before the first `##`
-- the `metadata` field remains unflattened, which preserves source information for later consumers
-
-## 4.6 Corpus Traversal Rules
-
-The CLI accepts either a single Markdown file or a directory. Directory traversal is intentionally shallow: `collect_markdown_files()` currently uses `glob("*.md")`, not recursive discovery.
+The CLI accepts either a single Markdown file or a directory. Directory traversal is intentionally shallow. `collect_markdown_files()` uses `glob("*.md")`, not recursive discovery.
 
 This means:
 
-- `python -m oks.etl content --output build/chunks.json` processes top-level Markdown files in `content/`
-- nested notebook or asset directories are ignored by the ETL corpus build
-- passing a non-Markdown file raises a `ValueError`
-- passing a missing path raises `FileNotFoundError`
+- `python -m oks.etl content --output build/chunks.json` processes the top-level Markdown files in `content/`
+- nested notebook or asset directories are ignored
+- a non-Markdown input file raises `ValueError`
+- a missing path raises `FileNotFoundError`
 
-For a first implementation, these constraints are useful because they make corpus behavior obvious.
+These choices keep the first implementation easy to reason about. They also keep the book honest about what the repository does not yet support.
 
-## 4.7 Command-Line Workflow
+## 4.8 Failure Cases
 
-Run the ETL pipeline over the book content:
+The ETL slice is simple enough that its failure behavior should be explicit.
 
-```bash
-python -m oks.etl content --output build/chunks.json
-```
+### 4.8.1 Non-Mapping Front Matter
 
-To emit a graph-oriented projection at the same time:
+If YAML parses successfully but does not produce a mapping, extraction fails immediately with `ValueError`.
 
-```bash
-python -m oks.etl content \
-  --output build/chunks.json \
-  --graph-output build/graph.json
-```
+### 4.8.2 Empty Body
 
-The CLI writes JSON with sorted keys and stable indentation. That is a small implementation detail, but it matters operationally because it makes generated artifacts easier to diff and inspect.
+If a document contains valid front matter but no body, extraction succeeds but emits no chunk records.
 
-## 4.8 Failure Modes And Edge Cases
+### 4.8.3 No Level-Two Headings
 
-The implementation is simple enough that its edge cases should be stated explicitly.
+If a document contains prose but no `##` headings, the whole body becomes a single `Intro` chunk.
 
-- If front matter parses to a non-mapping type, extraction fails immediately.
-- If the document has no body after front matter, no chunk records are emitted.
-- If the document contains no level-two headings, the entire body becomes a single `Intro` chunk.
-- If the document contains level-three or deeper headings, they remain inside the current chunk.
-- If `title` or `slug` is missing from front matter, the implementation derives a fallback from the file stem.
+### 4.8.4 Missing Title Or Slug
 
-These are not merely quirks. They define the current record contract.
+If front matter omits `title` or `slug`, the implementation derives fallbacks from the filename.
+
+These are not minor quirks. They define the current contract that tests and downstream consumers rely on.
 
 ## 4.9 Why This Boundary Matters
 
-The normalized chunk record is the first representation in the repository that is genuinely suitable for automation. It is stable enough to be:
+The normalized chunk record is the first representation in the repository that is stable enough to support automation. It can be:
 
 - tested in isolation
+- written to deterministic JSON
 - projected into a graph
-- inspected as JSON
-- used as input to publication or indexing
-- extended later with stricter schema validation
+- used as the basis for future indexing
+- compared across rebuilds
 
-This boundary matters more than its size suggests. In the repository, it is the point where the manuscript stops describing a target system and starts describing one that exists.
+That is why the ETL layer matters more than its code size suggests. It is the point where the manuscript stops describing a target system and starts describing one that exists.
 
-## 4.10 Current Scope And Deliberate Omissions
+## 4.10 What A Stronger ETL Layer Would Add
 
-The current implementation does not yet provide:
+The next-stage ETL layer would likely add:[^c4-jsonschema]
 
-- Schema CRUD
-- Author UI
-- API endpoints
-- Embedding generation
-- Database persistence
+- explicit schema validation over metadata and record fields
+- recursive or configurable corpus discovery
+- richer content typing beyond one generic chunk schema
+- more formal error classes and diagnostics
+- loaders that consume normalized records without reparsing raw documents
 
-Those capabilities remain part of the broader roadmap. The discipline of the current slice is that it only claims what it can execute and test.
+Those are reasonable next steps. They should be built on top of the existing deterministic boundary rather than in place of it.
+
+## 4.11 Reading Notes
+
+- **CommonMark Specification:** useful for distinguishing general Markdown syntax from the repository's local chunking rules.
+- **YAML 1.2.2 Specification:** useful for understanding why the front matter contract requires mapping-shaped metadata.
+- **JSON Schema:** useful for the next step beyond the repository's current structural validation.
+
+[^c4-commonmark]: CommonMark, *CommonMark Spec*: https://spec.commonmark.org/
+[^c4-yaml]: YAML Language Development Team, *YAML Ain't Markup Language (YAML) version 1.2.2*: https://yaml.org/spec/1.2.2/
+[^c4-jsonschema]: JSON Schema, *What is JSON Schema?*: https://json-schema.org/overview/what-is-jsonschema

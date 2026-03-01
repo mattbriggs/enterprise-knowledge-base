@@ -65,8 +65,8 @@ cd open-knowledge-systems
 ### 2. Set up a Python environment
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python3 -m venv ENV
+source ENV/bin/activate  # On Windows: ENV\Scripts\activate
 ```
 
 ### 3. Install dependencies
@@ -207,4 +207,4 @@ Please follow [semantic commit messages](https://www.conventionalcommits.org/) a
 
 This project is licensed under the MIT License. See [LICENSE](./LICENSE) for full terms.
 
-© 2025 Final State Press.
+© 2026 Final State Press.

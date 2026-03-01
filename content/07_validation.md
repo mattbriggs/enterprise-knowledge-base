@@ -5,123 +5,84 @@ slug: 07_validation
 
 # 7. Validation
 
-Validation is the part of the system that determines whether the rest of the architecture can be trusted. In a knowledge system, invalid structure does not merely produce a bad page. It contaminates derived records, graph projections, search indexes, and operational expectations. That is why validation should be treated as a layered system concern rather than as a single boolean check.
+Validation determines whether the rest of the architecture can be trusted. In a knowledge system, invalid structure does not merely produce a bad page. It contaminates normalized records, graph projections, retrieval behavior, and publication output. That is why validation should be treated as a layered assurance model rather than as a single boolean check.
 
-The repository implements only the first layer of that model, but it implements that layer concretely enough to study. This chapter explains the current validation boundary, the tests that enforce it, and the additional layers a fuller platform will need.
+The repository implements only the first part of that model, but it implements that part concretely enough to study. The sections below explain the current validation boundary, the tests that enforce it, and the additional layers a fuller platform will need.
 
 ## 7.1 Validation As Layers
 
-The manuscript uses the word "validation" in several different senses. They should be separated.
+The word "validation" covers several different tasks. They should be kept separate.
 
 ### 7.1.1 Syntax Validation
 
-Syntax validation asks whether the source document can be parsed at all. In the current repository this includes front matter detection and YAML parsing behavior.
+Syntax validation asks whether the input can be parsed at all. In the current repository this includes front matter detection and YAML parsing.
 
 ### 7.1.2 Structural Validation
 
-Structural validation asks whether the parsed document conforms to the repository's transformation contract. In the current implementation this includes rules such as "front matter must parse to a mapping" and "chunk records must contain required fields."
+Structural validation asks whether the parsed document conforms to the current transformation contract. In the repository this includes rules such as:
 
-### 7.1.3 Business-Rule Validation
+- front matter must parse to a mapping
+- chunk records must contain required fields
+- emitted identifiers must remain unique across the corpus
 
-Business-rule validation asks whether the content satisfies domain rules beyond structure. Examples include uniqueness rules, allowed taxonomy membership, or schema-specific authoring constraints. The repository does not yet implement this layer.
+### 7.1.3 Schema Validation
 
-### 7.1.4 Corpus-Level Validation
+Schema validation asks whether the content satisfies an explicit field-level contract: required properties, allowed types, enumerations, nested structure, or format constraints. The repository does not yet implement this layer formally, but JSON Schema is a natural fit for where this layer should eventually sit.[^c7-jsonschema]
 
-Corpus-level validation asks whether the content set remains coherent as a collection. Examples include placeholder detection, duplicate identifiers, broken publication navigation, or missing build artifacts. The repository implements only a small portion of this layer.
+### 7.1.4 Business-Rule Validation
 
-These distinctions matter because each layer fails for different reasons and should be tested differently.
+Business-rule validation asks whether content satisfies rules beyond structure. Examples include taxonomy membership, allowed workflow state, or uniqueness across a domain concept rather than just across chunk IDs.
 
-## 7.2 What The Current Implementation Validates
+### 7.1.5 Corpus-Level Validation
+
+Corpus-level validation asks whether the collection remains coherent as a whole. Examples include placeholder detection, navigation drift, duplicate identities, or missing build artifacts.
+
+### 7.1.6 Operational Validation
+
+Operational validation asks whether the system emits enough evidence to explain its own behavior. In a mature system this includes logs, metrics, traces, health signals, and release artifacts.
+
+These layers solve different problems. They should fail differently and be inspected differently.
+
+## 7.2 What The Repository Validates Today
 
 The repository validates the ETL boundary rather than the full target platform. The test suite in `tests/test_etl.py` verifies:
 
 - Markdown content files are discoverable
 - YAML front matter parsing behaves predictably
 - heading-based chunk extraction works as expected
-- extracted chunk records contain the required fields
+- extracted chunk records contain required fields
 - emitted chunk identifiers are unique across the corpus
 - graph projection emits expected relationship structures
 - the CLI writes the expected JSON artifacts
 - placeholder `_TODO` text no longer remains in content chapters
 
-This is a narrow validation boundary, but it is a useful one. It protects the first stable machine contract in the repository.
+This is a narrow validation boundary, but it is an important one. It protects the first stable machine contract in the repository.
 
-## 7.3 Syntax Validation In Practice
+## 7.3 Syntax And Structural Validation In Practice
 
-The first validation layer is syntax.
+The current implementation is simple enough that its validation rules can be described directly.
 
-### 7.3.1 Front Matter Parsing
+### 7.3.1 Front Matter Must Be Parseable
 
-Front matter is parsed with `yaml.safe_load()`. The parser will accept ordinary YAML mappings and reject malformed YAML. More importantly for the repository's current contract, it will also reject top-level YAML values that are not mappings.
+`yaml.safe_load()` must be able to parse the front matter block. Malformed YAML fails immediately.
 
-For example, this should parse successfully:
+### 7.3.2 Front Matter Must Produce A Mapping
 
-```yaml
----
-title: Knowledge Handbook
-slug: knowledge-handbook
----
-```
+Even when YAML parses successfully, the result must be a mapping. A list or scalar does not satisfy the metadata contract.
 
-This should fail structural validation after parsing because the top-level YAML value is a list:
+### 7.3.3 Chunk Records Must Be Complete
 
-```yaml
----
-- title
-- slug
----
-```
+Each emitted chunk must include the fields needed for provenance, ordering, grouping, and downstream projection.
 
-And malformed YAML such as:
+### 7.3.4 Chunk Identity Must Be Unique Across The Corpus
 
-```yaml
----
-title: Example
-slug example
----
-```
+The test suite checks the current corpus for duplicate IDs. That is a small but critical invariant because graph loading and retrieval both depend on it.
 
-should fail even earlier at the parser boundary.
+## 7.4 Worked Failure Cases
 
-### 7.3.2 Markdown Body Shape
+The repository's failure cases are useful because they expose the shape of the contract.
 
-The repository does not validate Markdown against the full CommonMark surface. Instead, it validates only the subset of structure needed by the ETL boundary. The most important current rule is that level-two headings create chunk boundaries.
-
-That means the system does not currently ask, "Is this Markdown beautiful?" It asks, "Can this Markdown be transformed into a stable section model?"
-
-## 7.4 Structural Validation In Practice
-
-Once parsing succeeds, the next question is whether the transformation contract can be satisfied.
-
-### 7.4.1 Required Record Fields
-
-Every emitted chunk must include the standard record fields:
-
-- `id`
-- `heading`
-- `content`
-- `order`
-- `source_file`
-- `source_path`
-- `document_title`
-- `document_slug`
-- `metadata`
-
-Later consumers should not need to guess whether a chunk has enough information to be grouped, projected, or published.
-
-### 7.4.2 Identity Validation
-
-The current test suite checks that emitted chunk identifiers are unique across the current corpus. That is a small but important validation rule. Duplicate chunk IDs would break graph projection, future indexing, and any downstream attempt to use the chunk as a stable reference.
-
-### 7.4.3 Corpus Placeholder Validation
-
-The repository also performs a simple but meaningful corpus-level check: it fails if placeholder `_TODO` text remains in content files. This is not schema validation in the classic sense, but it is still a quality gate. It prevents unfinished editorial scaffolding from being mistaken for publishable content.
-
-## 7.5 Worked Failure Cases
-
-The current system is simple enough that its failure cases can be described directly.
-
-### 7.5.1 Non-Mapping Front Matter
+### 7.4.1 Non-Mapping Front Matter
 
 Input:
 
@@ -137,34 +98,15 @@ Input:
 Text.
 ```
 
-Current outcome:
+Outcome:
 
-- the file is detected as having front matter
+- front matter is detected
 - YAML parsing succeeds
 - structural validation fails because the parsed value is not a mapping
 
-Why this is correct:
+This is correct behavior because metadata must remain key-addressable.
 
-- the ETL layer expects front matter to behave like metadata, not like an arbitrary YAML document
-
-### 7.5.2 No Level-Two Headings
-
-Input:
-
-```md
-This document has prose but no section headings.
-```
-
-Current outcome:
-
-- the document still produces a single chunk
-- that chunk is labeled `Intro`
-
-Why this is correct:
-
-- the repository chooses to preserve transformability rather than reject all unsectioned prose
-
-### 7.5.3 Empty Body After Front Matter
+### 7.4.2 Empty Body After Front Matter
 
 Input:
 
@@ -175,72 +117,89 @@ slug: empty-example
 ---
 ```
 
-Current outcome:
+Outcome:
 
 - front matter parsing succeeds
 - no chunk records are emitted
 
-Why this matters:
+This shows the difference between valid metadata and useful content.
 
-- it reveals that "valid metadata" is not the same thing as "useful content"
-- later platform layers may choose to reject this case more aggressively
+### 7.4.3 No Level-Two Headings
 
-## 7.6 The Current Test Boundary
+Input:
 
-The current test boundary is intentionally close to the ETL code. That is a strength, not a weakness, for this stage of the repository.
+```md
+This document has prose but no section headings.
+```
 
-The tests are useful because they are:
+Outcome:
 
-- fast
-- deterministic
-- independent of external services
-- focused on the repository's real implementation
+- the document still produces a single chunk
+- that chunk is labeled `Intro`
 
-This means the build can tell the maintainer something concrete: whether the Markdown-to-record contract still holds.
+This is a design choice. The repository prefers transformability over rejecting all unsectioned prose.
 
-## 7.7 What Is Not Yet Validated
+## 7.5 Where Schema Validation Should Sit
 
-The repository does not yet validate several important layers that the target platform will require:
+The repository currently stops at structural validation, but a fuller system should introduce schema validation between parsing and downstream derivation.
 
-- schema-specific field contracts beyond simple front matter presence
-- business rules such as uniqueness across semantic entities
-- ontology integrity
-- authoring-time form validation
-- graph-load consistency against a live Neo4j instance
-- search relevance or index freshness
-- telemetry completeness and auditability
-- performance targets under realistic workload
+That layer should answer questions such as:
 
-These are not omissions in theory. They are future validation layers that should be added only after the current normalization boundary remains stable.
+- which metadata fields are required for a content type
+- which fields have constrained types or enumerations
+- which nested structures are allowed
+- which identifiers or slugs must follow a format
+
+JSON Schema is a natural fit for this layer because it can describe object shape, required keys, nested structures, and constrained value forms in a machine-readable way. It does not replace business rules, but it provides a cleaner contract than ad hoc field checks.
+
+## 7.6 Validation And Security
+
+Production validation is broader than content shape. A fuller OKS platform would also need to validate:
+
+- interface inputs exposed through authoring or API surfaces
+- permission-sensitive operations
+- publication metadata and output integrity
+- audit and review trails for privileged actions
+
+This is where a verification framework such as OWASP ASVS becomes useful.[^c7-asvs] The repository does not yet implement those controls, but the architecture should preserve a path to them.
+
+## 7.7 Validation And Operational Evidence
+
+Validation is not complete when the system rejects bad input. It is complete when the system can explain what happened.
+
+At the repository level, tests and build behavior are the first form of that evidence. In a fuller system, operational evidence would also include:
+
+- logs that show parsing and loader failures
+- metrics for content throughput and build status
+- traces for long-running ingestion or publication paths
+- release artifacts that prove what content was published
+
+OpenTelemetry is a useful reference point for this later layer because it treats telemetry as a structured system contract rather than as scattered logging.[^c7-otel]
 
 ## 7.8 Future Validation Architecture
 
-A fuller OKS platform should validate content in stages rather than in one monolithic check.
+A stronger validation architecture should proceed in stages:
 
-### 7.8.1 Ingestion-Time Validation
+1. reject malformed input at parse time
+2. enforce schema constraints before normalization is trusted
+3. apply business-rule validation over domain-specific semantics
+4. validate graph, retrieval, and publication artifacts against normalized source
+5. verify operational evidence and release integrity
 
-Reject malformed or structurally incompatible input before it reaches durable storage.
-
-### 7.8.2 Schema Validation
-
-Validate required fields, field types, enumerations, and structural constraints against an explicit schema model.
-
-### 7.8.3 Business-Rule Validation
-
-Validate content against domain-specific rules such as uniqueness, workflow status, ontology membership, or publication readiness.
-
-### 7.8.4 Derived-Artifact Validation
-
-Verify that graph projections, publication outputs, and later retrieval indexes remain consistent with the normalized source.
-
-### 7.8.5 Operational Validation
-
-Verify that logs, metrics, health checks, and build outputs provide enough evidence to explain system behavior.
-
-Validation should eventually become part of the platform architecture rather than remain only a test-suite concern.
+This sequence matters. It keeps the expensive validation layers dependent on a stable core rather than using them to compensate for weak early contracts.
 
 ## 7.9 Why This Chapter Matters
 
-The repository's current validation layer is narrow, but it already does something important: it defines the minimum conditions under which the rest of the system can be trusted.
+The repository's current validation layer is narrow, but it already does something essential: it defines the minimum conditions under which the rest of the system can be trusted.
 
-Without that layer, the ETL chapter would describe a transformation but could not defend it. With that layer, the repository can make a stronger claim: the first machine boundary in the system is not only implemented, but checked.
+Without that layer, the ETL chapter would describe a transformation but could not defend it. With that layer, the manuscript can make a stronger claim: the first machine boundary in the system is not only implemented, but checked.
+
+## 7.10 Reading Notes
+
+- **JSON Schema:** useful for the boundary between structural validation and formal content contracts.
+- **OWASP ASVS:** useful for the security side of validation once the system exposes operational surfaces.
+- **OpenTelemetry Specification:** useful for understanding why operational evidence is part of validation rather than a separate concern.
+
+[^c7-jsonschema]: JSON Schema, *What is JSON Schema?*: https://json-schema.org/overview/what-is-jsonschema
+[^c7-asvs]: OWASP Foundation, *Application Security Verification Standard*: https://owasp.org/www-project-application-security-verification-standard/
+[^c7-otel]: OpenTelemetry, *OpenTelemetry Specification*: https://opentelemetry.io/docs/specs/otel/
