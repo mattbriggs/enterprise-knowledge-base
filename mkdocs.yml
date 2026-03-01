@@ -1,5 +1,5 @@
 site_name: Open Knowledge Systems
-site_description: A book and toolkit for building structured enterprise knowledge systems
+site_description: A technical manual and reference implementation for structured, machine-readable knowledge systems
 site_author: Final State Press
 site_url: https://finalstatepress.com/open-knowledge-systems
 
@@ -35,15 +35,15 @@ theme:
 nav:
   - Home: index.md
   - 1. Introduction: 01_introduction.md
-  - 2. Overall Description: 02_overall_description.md
-  - 3. Requirements: 03_requirements.md
-  - 4. Authoring & ETL: 02_authoring_etl.md
-  - 5. Storage & Retrieval: 03_storage_retrieval.md
-  - 6. Graph Modeling (Neo4j): 04_graph_modeling_neo4j.md
-  - 7. Validation: 05_validation.md
-  - 8. Publishing & Output: 06_publication.md
+  - 2. System Model & Design Principles: 02_overall_description.md
+  - 3. Design Criteria: 03_requirements.md
+  - 4. Authoring & ETL: 04_authoring_etl.md
+  - 5. Graph Modeling (Neo4j): 05_graph_modeling_neo4j.md
+  - 6. Storage & Retrieval: 06_storage_retrieval.md
+  - 7. Validation: 07_validation.md
+  - 8. Publishing & Output: 08_publication.md
   - 9. Appendix: 98_appendix.md
-  - 10. Future Directions: 99_future_work.md
+  - 10. Roadmap: 99_future_work.md
   - Notebooks:
       - ETL Demo (Jupyter): notebooks/demo_author_etl.ipynb
 

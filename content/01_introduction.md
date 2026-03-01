@@ -5,52 +5,105 @@ slug: 01_introduction
 
 # 1. Introduction
 
-### 1.1 Purpose
+## 1.1 Why This Book Exists
 
-The purpose of this document is to define a complete Software/System Requirements Specification (SRS) for the **Open Knowledge Systems** (OKS). This platform is intended to manage structured content (in the form of "atomic containers') for use by both human users and AI agents. The SRS outlines the system's functionality, constraints, and quality requirements in compliance with IEEE 830 standards. It will serve as a reference for stakeholders (developers, testers, users, etc.) to understand what the system will do and the conditions under which it will operate.  
+Enterprise knowledge systems usually fail for ordinary reasons. Content is authored in formats that are easy for humans but unstable for machines. Metadata rules are implied rather than enforced. Search is bolted on after publication rather than designed into the content lifecycle. Graph models are introduced too early, or too abstractly, and end up disconnected from the source material they are supposed to organize. Publication pipelines optimize for convenience while validation, provenance, and retrieval quality remain underspecified.
 
-### 1.2 Scope  
-The OKS platform enables an **author-first** (user-driven content creation) and **headless-first** (API-driven content management) workflow for managing structured content and knowledge. It will support content authoring, ingestion of external content, enrichment (metadata tagging and semantic embeddings), storage in multiple formats (YAML/JSON documents, vector database, and materialized knowledge graph), and delivery via both a static website and a RESTful API for external consumption. The scope of this SRS covers:  
+This book addresses that class of problem. It treats a knowledge system not as a single database or a single authoring tool, but as a sequence of design boundaries: authoring, normalization, validation, storage, graph projection, retrieval, and publication. The purpose of the book is to show how those boundaries fit together and what technical choices make them durable.
 
-- Functional capabilities including content schema management, validation rules, content creation interface, ingestion pipelines, content enrichment, static site generation with semantic markup, querying capabilities, and system monitoring.  
-- Non-functional requirements such as performance (scalability and latency), extensibility (use of open-source components), portability (containerization), observability (logging, tracing, metrics), and security (adherence to OWASP ASVS Level 2, audit trails, RBAC).  
-- System architecture description including main modules (Creation, Ingestion, Enrichment, etc.), data stores (schemas, rules, dictionaries, ontology, content storage, knowledge graph, etc.), and external interfaces (API, website, monitoring, authentication).  
-- Constraints and assumptions, particularly differences between a local proof-of-concept deployment and a production deployment (e.g. authentication omitted in PoC but required in production).  
+## 1.2 Who This Book Is For
 
-This SRS does **not** provide detailed design or implementation code; it focuses on requirements. Design diagrams are included to clarify system context, data flow, deployment, and data model, but they serve to illustrate requirements, not to dictate low-level design.  
+This book is written for technical readers who must design, build, or evaluate structured content platforms:
 
-### 1.3 Definitions, Acronyms, and Abbreviations  
-- **Atomic Content Container (Container):** A fundamental unit of content managed by the system, consisting of structured data fields (stored in YAML/JSON) and associated metadata (including semantic vector embeddings and relationships in the knowledge graph). Each container has a unique ID, version, and provenance info (e.g. author or source).  
-- **Schema:** A definition of a content type, including its structured fields and data types (comparable to a content model). Content containers must conform to a schema (also known as content type or template).  
-- **Syntax Definition:** A set of rules or templates governing the format/markup of content items (e.g. a predefined syntax for how content is structured, possibly including templating or markdown usage rules).  
-- **Rule:** A validation or business rule applied to content (e.g. ensuring required fields are present, or enforcing content quality constraints). Rules may be specific to a schema or global.  
-- **Data Dictionary:** A repository of metadata about data elements. In this context, it provides definitions for structured data fields or business terms used in content. It ensures consistent meaning for fields across schemas (a data dictionary entry might describe what a field like "Title" means and how it's used).  
-- **Terminology Store:** A controlled vocabulary of domain terms (keywords or phrases) that are relevant to the content domain. These terms could be topics, tags, or glossary terms that appear in content.  
-- **Domain Ontology:** A structured representation of knowledge for the domain, often hierarchical (e.g. categories, sub-categories, and terms) and semantic relationships between terms. In this system, the ontology may be designed in an external tool (Protégé) but stored internally as nodes and relationships in the knowledge graph (e.g. "Category' and "Term' nodes with "subcategory-of' or "is-a' relationships).  
-- **Knowledge Graph (KG):** A graph data representation that links content, terms, and concepts. The platform will "materialize' a knowledge graph, meaning content and ontology are stored as interconnected nodes/edges (e.g. a content container node linked to term nodes that it mentions, term nodes linked to category nodes, etc.).  
-- **Static Site Builder:** The component that generates a static website (HTML pages, likely with JSON-LD embedded) from the content in the system for human browsing. JSON-LD is used to embed structured data (knowledge graph context) into pages for SEO and AI consumption.  
-- **JSON-LD:** JavaScript Object Notation for Linked Data, a format to embed structured data in web pages. The platform uses JSON-LD in generated pages to expose the knowledge graph information (e.g. schema.org annotations) about content, [which helps search engines and AI understand the content context](https://www.yext.com/platform/content).  
-- **REST API:** The web service interface (based on HTTP/JSON, likely implemented via FastAPI) through which external applications or AI agents can query or manipulate content and knowledge in a headless manner.  
-- **OAuth 2.0:** An industry-standard protocol for authorization. The platform will use OAuth 2.0 for securing the API in production (e.g. issuing tokens to clients and validating scopes/permissions).  
-- **Provenance:** Metadata about the origin of a content item (who created it, when, and from what source).  
-- **Embedding (Vector Embedding):** A numeric vector representation of content (usually generated by an AI model) that captures semantic meaning, enabling similarity search. The platform stores an embedding for each content container to support semantic search queries.  
-- **Telemetry:** Monitoring data collected from the system, including logs, metrics, and traces of operations. Telemetry is used for observing system behavior and performance (e.g. capturing usage analytics, error rates, response times).  
-- **RBAC:** Role-Based Access Control, a method of regulating system access based on roles assigned to users (e.g. author, admin, reader roles with different permissions).  
-- **PoC:** Proof of Concept - a minimal deployment of the system used to verify concepts (in this case, a local deployment using open-source components).  
+- software architects
+- staff and principal engineers
+- technical leads for documentation, data, or platform teams
+- advanced practitioners working on retrieval, publication, or knowledge modeling systems
 
-*Note:* Additional acronyms are listed in section [4.2](#42-acronyms-and-abbreviations). Terms specific to content management and knowledge graphs are further explained in the [Glossary](#41-glossary-of-terms).  
+It assumes the reader is already comfortable with software design, data structures, APIs, and developer tooling. It does not assume prior experience building a knowledge graph, a static publishing pipeline, or a schema-driven authoring system from scratch.
 
-### 1.4 References  
-The following documents and sources are referenced or provide context for this SRS:  
+## 1.3 Scope
 
-- IEEE Std 830-1998 - IEEE Recommended Practice for Software Requirements Specifications (for overall structure and best practices in requirements documentation).  
-- OWASP Application Security Verification Standard (ASVS) 4.0.3 - [particularly Level 2 requirements](https://versprite.com/blog/software-development-life-cycle) [oai_citation:1‡versprite.com] which define industry-standard security controls for "most applications'.  
-- Quire Documentation on YAML & Markdown usage - illustrating how content is split between **YAML** for structured data and **Markdown** [for narrative content](https://quire.getty.edu/docs-v1/fundamentals), highlighting best practices in structured authoring.  
-- Chris Diaz, *"Introduction to Static Site Generators'* - notes importance of correct **YAML** syntax in content front-matter and the need for validation, since "[invalid YAML will break your website](https://chrisdaaz.github.io/static-web-scholcomm/tutorials/static-site-generators)'.  
-- Radview Blog, *"SLA for Performance and Load Testing'* - provides insight on how performance testing informs SLA definitions, noting that SLAs are **pre-defined performance goals** and test results [are compared against them](https://www.radview.com/blog/in-the-spotlight-the-sla-for-performance-and-load-testing), and that performance tests establish [baseline data for SLAs](https://www.radview.com/blog/in-the-spotlight-the-sla-for-performance-and-load-testing/) [oai_citation:5‡radview.com].  
-- [Yext Platform, *Knowledge Graph*](https://www.yext.com/platform/content) - explains the value of structuring content in a knowledge graph to improve search engine and AI discoverability.   
+The book covers two related but distinct subjects.
 
-### 1.5 Overview  
+The first is the **target architecture**: a broader Open Knowledge Systems platform that supports schema-governed authoring, ingestion, normalization, graph projection, retrieval, publication, validation, and operational controls.
 
-The rest of this SRS document is organized as follows: **Section 2** provides a high-level description of the OKS system, its context, major components, and operating environment. This includes illustrative diagrams for context, data flow, deployment, and data models to help visualize the system architecture and workflows. **Section 3** enumerates the specific requirements - functional requirements detail the expected features and behaviors of the system, while non-functional requirements specify performance targets, security standards, and other quality attributes. Each requirement is labeled with a unique identifier (REQ-***###***) for traceability. **Section 4** contains appendices, including a glossary of key terms to clarify domain-specific language and an acronym list. The goal is to ensure clarity and completeness so that stakeholders and developers can proceed with design, implementation, and testing with a shared understanding of the system's requirements.  
+The second is the **current reference implementation** in this repository: a narrower Markdown ETL slice that parses YAML front matter, splits documents into stable chunks, normalizes them into machine-friendly records, and projects them into a graph-oriented form suitable for later loading or analysis.
 
+That separation is essential. The book covers both the design horizon and the implemented core, but it should not blur them. When a chapter describes the target platform, it is describing architecture. When it describes the repository implementation, it is describing code and behavior that can be inspected and tested.
+
+## 1.4 What The Book Covers
+
+The technical scope of the manuscript includes:
+
+- content modeling and authoring constraints
+- Markdown and YAML as a structured authoring boundary
+- ETL and normalization from source documents to stable records
+- graph-oriented projection for relationship-aware retrieval
+- storage and retrieval boundaries across document and graph forms
+- validation strategy at the syntax, schema, and corpus levels
+- publication as both human-facing output and machine-readable delivery
+- operational concerns such as observability, security posture, and scalability targets
+
+The book does not attempt to serve as an exhaustive product specification for a production platform. It is better understood as a technical manual with design criteria, implementation notes, and architectural reasoning.
+
+## 1.5 Design Position
+
+Several positions govern the manuscript:
+
+- content is a structured system artifact, not just prose with optional metadata
+- graph modeling belongs downstream of stable normalization; it should not replace source-of-truth content representation
+- publication is part of system design, not a final formatting step
+- retrieval quality depends as much on content contracts and validation discipline as on search technology
+- credibility depends on honest boundaries; unsupported claims and vague capability language weaken both the book and the software it describes
+
+These positions define the standard against which each chapter should be read.
+
+## 1.6 How To Use This Book
+
+Readers approaching the material from different goals can use different paths.
+
+- If your primary goal is architecture, begin with Chapters 1 through 3, then read Chapters 6 through 8.
+- If your primary goal is implementation, begin with Chapters 4 and 5, then continue through Chapters 6 and 7.
+- If your primary goal is repository contribution, treat the implementation chapters as authoritative for current behavior and the architecture chapters as design context.
+
+The ideal reading path, however, is sequential. The book is intended to build a cumulative argument: content contracts lead to normalization, normalization leads to storage and graph projection, and those decisions constrain validation, retrieval, and publication.
+
+## 1.7 Chapter Map
+
+The remaining chapters are organized as follows.
+
+- **Chapter 2, System Model and Design Principles**, defines the system model, major boundaries, and architectural posture.
+- **Chapter 3, Design Criteria**, captures the condensed criteria that support the platform vision and implementation roadmap.
+- **Chapter 4, Authoring and ETL**, explains the first working implementation slice and the contract between source documents and normalized records.
+- **Chapter 5, Graph Modeling**, explains how normalized content can be represented in a property graph without losing source-of-truth discipline.
+- **Chapter 6, Storage and Retrieval**, describes current storage forms and the retrieval boundary they create.
+- **Chapter 7, Validation**, describes the quality gates currently implemented and those required later.
+- **Chapter 8, Publishing and Output**, explains how the content corpus becomes publishable and machine-readable output.
+- **The appendix material** provides compact definitions and supporting terminology.
+
+As the manuscript evolves, some design-criteria material will likely move out of the main narrative and into appendix form. That change would improve the flow of the book without changing its technical scope.
+
+## 1.8 Conventions Used In This Book
+
+The book uses a small set of conventions to keep the argument precise.
+
+- **Target architecture** refers to the broader platform the manuscript is designing toward.
+- **Reference implementation** refers to the code currently present in this repository.
+- **Source document** refers to an author-facing Markdown file, optionally with YAML front matter.
+- **Normalized record** refers to a machine-friendly representation emitted by the ETL layer.
+- **Graph projection** refers to a graph-ready representation derived from normalized records, not the authoritative source content itself.
+
+Where a term needs more compact definition, the appendix should support the main text rather than interrupt it.
+
+## 1.9 Standard Of Evidence
+
+Because the subject combines architecture, information modeling, search, publication, and operational design, the manuscript must stay disciplined about what it claims.
+
+The manual therefore uses three kinds of statement:
+
+- **implemented behavior**, which should be observable in the repository
+- **design targets**, which describe intended future capabilities
+- **technical rationale**, which explains why a given design choice is defensible
+
+These categories should not be conflated. A technical manual earns trust by marking the boundary between evidence and ambition.

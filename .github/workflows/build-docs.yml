@@ -26,7 +26,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install mkdocs-git-revision-date-localized-plugin
+          pip install -e .
 
       - name: 📘 Install Pandoc
         run: |
@@ -40,7 +40,10 @@ jobs:
           sudo apt-get install -y fonts-liberation libpangocairo-1.0-0 libpangoft2-1.0-0
 
       - name: 🌐 Build HTML with MkDocs
-        run: mkdocs build
+        run: mkdocs build --strict
+
+      - name: ✅ Run tests
+        run: pytest
 
       - name: 📚 Build EPUB with Pandoc
         run: |
