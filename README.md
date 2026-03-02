@@ -138,8 +138,15 @@ PDF output depends on your system's LaTeX or HTML rendering setup. Two options:
 
 ```bash
 pip install weasyprint
-weasyprint site/index.html open-knowledge-systems.pdf
+
+# macOS: install the native libraries once via Homebrew
+brew install glib pango libffi
+
+# uses the repo wrapper so Homebrew libraries and font caches are configured
+scripts/weasyprint.sh site/index.html open-knowledge-systems.pdf
 ```
+
+If you call `ENV/bin/weasyprint` directly on macOS, export `DYLD_FALLBACK_LIBRARY_PATH="$(brew --prefix)/lib:${DYLD_FALLBACK_LIBRARY_PATH:-}"` first.
 
 ### Option 2: via Pandoc + LaTeX
 

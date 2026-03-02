@@ -27,9 +27,9 @@ else
 fi
 
 # Step 4: Build PDF with WeasyPrint (requires HTML build)
-if command -v weasyprint >/dev/null 2>&1; then
+if [ -x "$PWD/ENV/bin/weasyprint" ] || command -v weasyprint >/dev/null 2>&1; then
     echo "Building PDF from site/index.html using WeasyPrint..."
-    weasyprint site/index.html open-knowledge-systems.pdf
+    scripts/weasyprint.sh site/index.html open-knowledge-systems.pdf
 else
     echo "WeasyPrint not found. Skipping PDF generation."
 fi
