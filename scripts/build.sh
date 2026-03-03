@@ -42,12 +42,19 @@ else
     echo "Pandoc not found. Skipping EPUB generation."
 fi
 
-# Step 4: Build PDF with WeasyPrint (requires HTML build)
-if [ -x "$PWD/ENV/bin/weasyprint" ] || command -v weasyprint >/dev/null 2>&1; then
-    echo "Building PDF from site/index.html using WeasyPrint..."
-    scripts/weasyprint.sh site/index.html "${pdf_output}"
+# Step 4: Build PDF with Pandoc from all Markdown chapters
+if command -v pandoc >/dev/null 2>&1; then
+    if command -v xelatex >/dev/null 2>&1; then
+        echo "Building PDF from Markdown chapters with Pandoc..."
+        pandoc content/*.md -o "${pdf_output}" \
+            --metadata title="Open Knowledge Systems" \
+            --metadata author="Final State Press" \
+            --toc --pdf-engine=xelatex
+    else
+        echo "XeLaTeX not found. Skipping PDF generation."
+    fi
 else
-    echo "WeasyPrint not found. Skipping PDF generation."
+    echo "Pandoc not found. Skipping PDF generation."
 fi
 
 # Step 5: Run tests
