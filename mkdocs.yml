@@ -7,6 +7,9 @@ repo_name: finalstatepress/open-knowledge-systems
 repo_url: https://github.com/finalstatepress/open-knowledge-systems
 edit_uri: edit/main/content/
 
+hooks:
+  - hooks/mkdocs_compat.py
+
 docs_dir: content
 
 theme:

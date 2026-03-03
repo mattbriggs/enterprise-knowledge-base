@@ -47,7 +47,8 @@ jobs:
 
       - name: 📚 Build EPUB with Pandoc
         run: |
-          pandoc content/*.md -o open-knowledge-systems.epub \
+          mkdir -p books
+          pandoc content/*.md -o books/open-knowledge-systems.epub \
             --metadata title="Open Knowledge Systems" \
             --metadata author="Final State Press" \
             --toc --epub-chapter-level=2
@@ -59,7 +60,8 @@ jobs:
 
       - name: 🖨 Build PDF with Pandoc
         run: |
-          pandoc content/*.md -o open-knowledge-systems.pdf \
+          mkdir -p books
+          pandoc content/*.md -o books/open-knowledge-systems.pdf \
             --metadata title="Open Knowledge Systems" \
             --metadata author="Final State Press" \
             --toc --pdf-engine=xelatex
@@ -71,15 +73,15 @@ jobs:
           path: site/
 
       - name: 📦 Upload PDF
-        if: success() && hashFiles('open-knowledge-systems.pdf') != ''
+        if: success() && hashFiles('books/open-knowledge-systems.pdf') != ''
         uses: actions/upload-artifact@v4
         with:
           name: open-knowledge-systems.pdf
-          path: open-knowledge-systems.pdf
+          path: books/open-knowledge-systems.pdf
 
       - name: 📦 Upload EPUB
-        if: success() && hashFiles('open-knowledge-systems.epub') != ''
+        if: success() && hashFiles('books/open-knowledge-systems.epub') != ''
         uses: actions/upload-artifact@v4
         with:
           name: open-knowledge-systems.epub
-          path: open-knowledge-systems.epub
+          path: books/open-knowledge-systems.epub
