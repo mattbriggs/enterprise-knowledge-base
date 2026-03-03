@@ -10,14 +10,14 @@
 
 ## Overview
 
-This repository currently has two related layers:
+This repository has two related layers:
 
 - A technical manual describing the target Open Knowledge Systems architecture.
 - A narrow reference implementation for schema-aware Markdown ETL.
 
-The implementation is intentionally narrower than the target platform described in the book. Today the runnable code covers content parsing, front matter extraction, heading-based chunking, normalized JSON output, and a graph-friendly projection for Neo4j-oriented workflows.
+The implementation is intentionally narrower than the target platform described in the book. The runnable code currently covers content parsing, front matter extraction, heading-based chunking, normalized JSON output, and a graph-friendly projection for Neo4j-oriented workflows.
 
-The project explores how to design, build, validate, and publish knowledge systems using tools like:
+The project uses:
 
 - **Markdown** for content
 - **Python** for data processing
@@ -26,6 +26,7 @@ The project explores how to design, build, validate, and publish knowledge syste
 - **Jupyter Notebooks** for demonstrations
 
 The manual and code together focus on:
+
 - Create schema-driven modular content
 - Store and retrieve content programmatically
 - Model knowledge in Neo4j
@@ -63,47 +64,69 @@ git clone https://github.com/finalstatepress/open-knowledge-systems.git
 cd open-knowledge-systems
 ```
 
-### 2. Set up a Python environment
+### 2. Create a virtual environment
 
 ```bash
 python3 -m venv ENV
-source ENV/bin/activate  # On Windows: ENV\Scripts\activate
+source ENV/bin/activate
 ```
 
 ### 3. Install dependencies
 
 ```bash
-pip install -r requirements.txt
-pip install -e .
+ENV/bin/python -m pip install -r requirements.txt
+ENV/bin/python -m pip install -e .
 ```
 
 ---
 
-## Building the Book
+## Common Commands
 
-### 1. Serve HTML locally (live preview)
+### Serve the site locally
 
 ```bash
-mkdocs serve
+ENV/bin/python -m mkdocs serve
 ```
 
 Open [http://127.0.0.1:8000](http://127.0.0.1:8000) to review the manuscript locally.
 
-###  2. Build HTML static site
+### Build the HTML site
 
 ```bash
-mkdocs build --strict
+ENV/bin/python -m mkdocs build --strict
 ```
 
-Output is saved in the `/site/` folder.
+Output: `/site/`
 
-### 3. Build all publication artifacts
+### Run tests
+
+```bash
+ENV/bin/python -m pytest
+```
+
+### Run the ETL slice
+
+Normalize the Markdown corpus into chunk records:
+
+```bash
+ENV/bin/python -m oks.etl content --output build/chunks.json
+```
+
+Generate both chunk and graph-oriented projections:
+
+```bash
+ENV/bin/python -m oks.etl content \
+  --output build/chunks.json \
+  --graph-output build/graph.json
+```
+
+### Build all publication artifacts
 
 ```bash
 scripts/build.sh
 ```
 
-Outputs are saved to:
+Outputs:
 
 - `/site/` for the HTML site
 - `/books/open-knowledge-systems.epub` for the ebook
@@ -113,16 +136,18 @@ Outputs are saved to:
 
 ## Export an EPUB
 
-Use `pandoc` to convert the Markdown source into `.epub`.
+Use `pandoc` to convert the Markdown source into EPUB.
 
 ### Install Pandoc
 
-Mac:  
+macOS:
+
 ```bash
 brew install pandoc
 ```
 
-Ubuntu:  
+Ubuntu:
+
 ```bash
 sudo apt install pandoc
 ```
@@ -133,7 +158,8 @@ sudo apt install pandoc
 pandoc content/*.md -o books/open-knowledge-systems.epub --metadata title="Open Knowledge Systems"
 ```
 
-To include cover image and metadata, modify:
+To include additional metadata:
+
 ```bash
 pandoc content/*.md -o books/open-knowledge-systems.epub \
   --metadata title="Open Knowledge Systems" \
@@ -150,16 +176,17 @@ PDF output depends on your system's LaTeX or HTML rendering setup. Two options:
 ### Option 1: via `weasyprint` (recommended for styled output)
 
 ```bash
-pip install weasyprint
+ENV/bin/python -m pip install weasyprint
 
-# macOS: install the native libraries once via Homebrew
+# macOS native libraries
 brew install glib pango libffi
 
-# uses the repo wrapper so Homebrew libraries and font caches are configured
+# build the HTML site first, then convert it
+ENV/bin/python -m mkdocs build --strict
 scripts/weasyprint.sh site/index.html books/open-knowledge-systems.pdf
 ```
 
-If you call `ENV/bin/weasyprint` directly on macOS, export `DYLD_FALLBACK_LIBRARY_PATH="$(brew --prefix)/lib:${DYLD_FALLBACK_LIBRARY_PATH:-}"` first.
+`scripts/weasyprint.sh` configures Homebrew library lookup on macOS and a writable font cache directory.
 
 ### Option 2: via Pandoc + LaTeX
 
@@ -168,34 +195,9 @@ pandoc content/*.md -o books/open-knowledge-systems.pdf
 ```
 
 If LaTeX is not installed:
+
 ```bash
 sudo apt install texlive texlive-xetex texlive-fonts-recommended
-```
-
----
-
-## Run Tests
-
-Run the implementation and manuscript quality checks:
-
-```bash
-pytest
-```
-
-## Run the ETL Slice
-
-Normalize the Markdown corpus into chunk records:
-
-```bash
-python -m oks.etl content --output build/chunks.json
-```
-
-Generate both chunk and graph-oriented projections:
-
-```bash
-python -m oks.etl content \
-  --output build/chunks.json \
-  --graph-output build/graph.json
 ```
 
 ---
@@ -206,7 +208,7 @@ python -m oks.etl content \
 - Use `scripts/build.sh` for repeatable builds.
 - Treat `/books/` as generated release output; keep only `books/.gitkeep` under version control.
 - Keep prose claims aligned with the implementation boundary.
-- Run `black` or `flake8` for code style checks.
+- Run `black`, `flake8`, or `pytest` before releasing.
 - Use GitHub Issues and PRs for contributions.
 
 ---
@@ -217,16 +219,17 @@ Recommended flow:
 
 1. Activate the environment and run `scripts/build.sh`.
 2. Confirm the release artifacts exist at `books/open-knowledge-systems.epub` and `books/open-knowledge-systems.pdf`.
-3. Commit and push any source changes you want in the release.
-4. Create and push a tag, for example:
+3. Run `ENV/bin/python -m pytest` if you have not already done so in this release cycle.
+4. Commit and push the source changes you want in the release.
+5. Create and push a tag, for example:
 
 ```bash
 git tag -a v0.1.0 -m "Open Knowledge Systems v0.1.0"
 git push origin v0.1.0
 ```
 
-5. In GitHub, open `Releases` for the repository and create a new release from that tag.
-6. Upload `books/open-knowledge-systems.epub` and `books/open-knowledge-systems.pdf` as release assets.
+6. In GitHub, open `Releases` for the repository and create a new release from that tag.
+7. Upload `books/open-knowledge-systems.epub` and `books/open-knowledge-systems.pdf` as release assets.
 
 If you use the GitHub CLI, you can create the release from the terminal after building:
 
@@ -246,7 +249,7 @@ We welcome issues, suggestions, and pull requests!
 
 1. Fork the repo
 2. Create a branch
-3. Commit your changes
+3. Make your changes and run the relevant checks
 4. Open a PR
 
 Please follow [semantic commit messages](https://www.conventionalcommits.org/) and write tests for new functionality.
