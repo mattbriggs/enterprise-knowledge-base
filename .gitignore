@@ -145,6 +145,8 @@ venv.bak/
 
 # mkdocs documentation
 /site
+/books/*
+!/books/.gitkeep
 
 # mypy
 .mypy_cache/
@@ -194,5 +196,4 @@ cython_debug/
 .cursorindexingignore
 
 .DS_Store
-CHAPTER_REWRITE_BRIEFS.md
-EDITORIAL_PLAN.md
+editorial-plans/

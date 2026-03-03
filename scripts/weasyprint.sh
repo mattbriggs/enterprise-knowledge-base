@@ -22,4 +22,20 @@ else
     exit 1
 fi
 
+if [[ $# -lt 2 ]]; then
+    echo "Usage: scripts/weasyprint.sh INPUT_HTML OUTPUT_PDF" >&2
+    exit 1
+fi
+
+input_file="$1"
+
+if [[ ! -f "$input_file" ]]; then
+    if [[ "$input_file" == "site/index.html" ]]; then
+        echo "Missing $input_file. Build the HTML site first with: ENV/bin/python -m mkdocs build --strict" >&2
+    else
+        echo "Input HTML file not found: $input_file" >&2
+    fi
+    exit 1
+fi
+
 exec "${weasyprint_bin}" "$@"

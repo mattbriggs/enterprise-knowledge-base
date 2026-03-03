@@ -40,6 +40,7 @@ The manual and code together focus on:
 .
 ├── content/                # Manuscript chapters in Markdown
 ├── content/notebooks/      # Notebook pages published with MkDocs
+├── books/                  # Generated EPUB and PDF artifacts
 ├── graphs/                 # Neo4j schema and example Cypher
 ├── scripts/                # Build automation
 ├── src/oks/                # Reference implementation package
@@ -96,6 +97,18 @@ mkdocs build --strict
 
 Output is saved in the `/site/` folder.
 
+### 3. Build all publication artifacts
+
+```bash
+scripts/build.sh
+```
+
+Outputs are saved to:
+
+- `/site/` for the HTML site
+- `/books/open-knowledge-systems.epub` for the ebook
+- `/books/open-knowledge-systems.pdf` for the PDF
+
 ---
 
 ## Export an EPUB
@@ -117,12 +130,12 @@ sudo apt install pandoc
 ### Convert to EPUB
 
 ```bash
-pandoc content/*.md -o open-knowledge-systems.epub --metadata title="Open Knowledge Systems"
+pandoc content/*.md -o books/open-knowledge-systems.epub --metadata title="Open Knowledge Systems"
 ```
 
 To include cover image and metadata, modify:
 ```bash
-pandoc content/*.md -o open-knowledge-systems.epub \
+pandoc content/*.md -o books/open-knowledge-systems.epub \
   --metadata title="Open Knowledge Systems" \
   --metadata author="Final State Press" \
   --epub-cover-image=assets/cover.png
@@ -143,7 +156,7 @@ pip install weasyprint
 brew install glib pango libffi
 
 # uses the repo wrapper so Homebrew libraries and font caches are configured
-scripts/weasyprint.sh site/index.html open-knowledge-systems.pdf
+scripts/weasyprint.sh site/index.html books/open-knowledge-systems.pdf
 ```
 
 If you call `ENV/bin/weasyprint` directly on macOS, export `DYLD_FALLBACK_LIBRARY_PATH="$(brew --prefix)/lib:${DYLD_FALLBACK_LIBRARY_PATH:-}"` first.
@@ -151,7 +164,7 @@ If you call `ENV/bin/weasyprint` directly on macOS, export `DYLD_FALLBACK_LIBRAR
 ### Option 2: via Pandoc + LaTeX
 
 ```bash
-pandoc content/*.md -o open-knowledge-systems.pdf
+pandoc content/*.md -o books/open-knowledge-systems.pdf
 ```
 
 If LaTeX is not installed:
@@ -191,9 +204,39 @@ python -m oks.etl content \
 
 - Add new chapters in `content/NN_topic.md` and update `mkdocs.yml` navigation.
 - Use `scripts/build.sh` for repeatable builds.
+- Treat `/books/` as generated release output; keep only `books/.gitkeep` under version control.
 - Keep prose claims aligned with the implementation boundary.
 - Run `black` or `flake8` for code style checks.
 - Use GitHub Issues and PRs for contributions.
+
+---
+
+## Create a Release
+
+Recommended flow:
+
+1. Activate the environment and run `scripts/build.sh`.
+2. Confirm the release artifacts exist at `books/open-knowledge-systems.epub` and `books/open-knowledge-systems.pdf`.
+3. Commit and push any source changes you want in the release.
+4. Create and push a tag, for example:
+
+```bash
+git tag -a v0.1.0 -m "Open Knowledge Systems v0.1.0"
+git push origin v0.1.0
+```
+
+5. In GitHub, open `Releases` for the repository and create a new release from that tag.
+6. Upload `books/open-knowledge-systems.epub` and `books/open-knowledge-systems.pdf` as release assets.
+
+If you use the GitHub CLI, you can create the release from the terminal after building:
+
+```bash
+gh release create v0.1.0 \
+  books/open-knowledge-systems.epub \
+  books/open-knowledge-systems.pdf \
+  --title "Open Knowledge Systems v0.1.0" \
+  --notes "Release notes go here."
+```
 
 ---
 
