@@ -130,7 +130,7 @@ Outputs:
 
 - `/site/` for the HTML site
 - `/books/open-knowledge-systems.epub` for the ebook
-- `/books/open-knowledge-systems.pdf` for the PDF
+- `/books/open-knowledge-systems.pdf` for the PDF built from the Markdown chapters with Pandoc
 
 ---
 
@@ -173,7 +173,30 @@ pandoc content/*.md -o books/open-knowledge-systems.epub \
 
 PDF output depends on your system's LaTeX or HTML rendering setup. Two options:
 
-### Option 1: via `weasyprint` (recommended for styled output)
+### Option 1: via Pandoc + LaTeX (default book build)
+
+```bash
+pandoc content/*.md -o books/open-knowledge-systems.pdf \
+  --metadata title="Open Knowledge Systems" \
+  --metadata author="Final State Press" \
+  --toc --pdf-engine=xelatex
+```
+
+If LaTeX is not installed:
+
+macOS:
+
+```bash
+brew install --cask mactex-no-gui
+```
+
+Ubuntu:
+
+```bash
+sudo apt install texlive texlive-xetex texlive-fonts-recommended
+```
+
+### Option 2: via `weasyprint` (HTML snapshot, not the full multi-page book)
 
 ```bash
 ENV/bin/python -m pip install weasyprint
@@ -187,18 +210,6 @@ scripts/weasyprint.sh site/index.html books/open-knowledge-systems.pdf
 ```
 
 `scripts/weasyprint.sh` configures Homebrew library lookup on macOS and a writable font cache directory.
-
-### Option 2: via Pandoc + LaTeX
-
-```bash
-pandoc content/*.md -o books/open-knowledge-systems.pdf
-```
-
-If LaTeX is not installed:
-
-```bash
-sudo apt install texlive texlive-xetex texlive-fonts-recommended
-```
 
 ---
 
